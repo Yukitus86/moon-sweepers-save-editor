@@ -66,3 +66,7 @@ The game uses Unity 6000.6 with IL2CPP metadata v108. The Cpp2IL release builds 
 | `src/MoonSaveEditor/Core/Loc.cs` | German/English texts |
 | `src/MoonSaveEditor/MainWindow.xaml` | UI; `Themes/` holds the dark theme and the flag images |
 | `tests/SelfTest` | Round-trip and end-to-end checks |
+
+## License
+
+MIT, see [LICENSE](LICENSE).
