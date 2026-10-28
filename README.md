@@ -4,6 +4,21 @@ WPF (.NET 10) tool that changes the money in Moon Sweepers save games (Unity IL2
 
 Unofficial fan tool, not affiliated with DragDropGames.
 
+[![Latest release](https://img.shields.io/github/v/release/Yukitus86/moon-sweepers-save-editor)](../../releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Yukitus86/moon-sweepers-save-editor/total)](../../releases)
+![Windows x64](https://img.shields.io/badge/Windows-x64-0078D6)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+![Screenshot of the editor](docs/screenshot.png)
+
+## Features
+
+- Lists every save slot with balance, regions, play time and last played date
+- Sets the team balance; checksum (SHA256) and size are recalculated so the game loads the save
+- Automatic backup before every change, one-click restore
+- Dark theme, German/English UI
+- Single exe, no install
+
 ## Usage
 
 1. Download `MoonSaveEditor.exe` from the [latest release](../../releases/latest). No installation or .NET runtime needed (Windows 10/11 x64).
