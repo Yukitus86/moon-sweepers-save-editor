@@ -1,0 +1,194 @@
+<Window x:Class="MoonSaveEditor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:MoonSaveEditor"
+        Icon="Assets/app.ico"
+        Title="Moon Sweepers Savegame Editor"
+        Width="1060" Height="680" MinWidth="900" MinHeight="600"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="CanResizeWithGrip" WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
+        FontFamily="{StaticResource UiFont}" Foreground="{StaticResource Text}">
+
+    <Border Margin="10" Background="{StaticResource Bg}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="18">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.55" Color="Black"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="52"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title bar -->
+            <Grid Grid.Row="0" Background="Transparent" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
+                    <Image Source="Assets/icon.png" Width="24" Height="24" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Text="Moon Sweepers" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock Text="  ·  " Foreground="{StaticResource Muted}" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock Text="{l:T Subtitle}" Foreground="{StaticResource Muted}" FontSize="14" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <Button x:Name="FlagDe" Style="{StaticResource FlagButton}" Click="LanguageGerman_Click" ToolTip="Deutsch">
+                        <Image Source="{StaticResource FlagDE}" Width="26" Height="14" Stretch="Fill">
+                            <Image.Clip><RectangleGeometry Rect="0,0,26,14" RadiusX="2.5" RadiusY="2.5"/></Image.Clip>
+                        </Image>
+                    </Button>
+                    <Button x:Name="FlagEn" Style="{StaticResource FlagButton}" Click="LanguageEnglish_Click" ToolTip="English" Margin="0,0,14,0">
+                        <Image Source="{StaticResource FlagUS}" Width="26" Height="14" Stretch="Fill">
+                            <Image.Clip><RectangleGeometry Rect="0,0,26,14" RadiusX="2.5" RadiusY="2.5"/></Image.Clip>
+                        </Image>
+                    </Button>
+                    <Button Style="{StaticResource TitleButton}" Click="Minimize_Click" ToolTip="{l:T Minimize}">
+                        <Path Data="M0,0 L10,0" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.4"/>
+                    </Button>
+                    <Button Style="{StaticResource TitleButton}" Click="Close_Click" ToolTip="{l:T Close}">
+                        <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.4"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Content -->
+            <Grid Grid.Row="1" Margin="20,4,20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="300"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Slot list -->
+                <DockPanel Grid.Column="0">
+                    <Grid DockPanel.Dock="Top" Margin="2,0,0,12">
+                        <TextBlock Text="{l:T Saves}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                        <Button Content="{l:T Refresh}" Style="{StaticResource ChipButton}" HorizontalAlignment="Right" Click="Refresh_Click"/>
+                    </Grid>
+                    <TextBlock x:Name="EmptyText" DockPanel.Dock="Top" TextWrapping="Wrap" Foreground="{StaticResource Muted}"
+                               Visibility="Collapsed" Margin="2,0,0,0"/>
+                    <ListBox x:Name="SlotList" Style="{StaticResource SlotList}" SelectionChanged="SlotList_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"/>
+                                        <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding MoneyText}" Foreground="{Binding MoneyBrush}"
+                                               FontFamily="{StaticResource DisplayFont}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+
+                <!-- Details -->
+                <Grid Grid.Column="2">
+                    <TextBlock x:Name="NoSelectionText" Text="{l:T PickSlot}" Foreground="{StaticResource Muted}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
+
+                    <ScrollViewer x:Name="DetailPanel" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                        <StackPanel>
+                            <Border x:Name="GameRunningBanner" Background="#33F2626A" BorderBrush="{StaticResource Bad}" BorderThickness="1"
+                                    CornerRadius="12" Padding="14,10" Margin="0,0,0,14" Visibility="Collapsed">
+                                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text}"
+                                           Text="{l:T GameRunning}"/>
+                            </Border>
+
+                            <Border x:Name="ErrorBanner" Background="#33F2626A" BorderBrush="{StaticResource Bad}" BorderThickness="1"
+                                    CornerRadius="12" Padding="14,10" Margin="0,0,0,14" Visibility="Collapsed">
+                                <TextBlock x:Name="ErrorText" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <!-- Balance card -->
+                            <Border Style="{StaticResource Card}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock x:Name="SlotTitleText" FontSize="20" FontWeight="SemiBold" FontFamily="{StaticResource DisplayFont}"/>
+                                        <TextBlock x:Name="SlotSubtitle" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                        <TextBlock Text="{l:T Balance}" Style="{StaticResource Caption}" HorizontalAlignment="Right"/>
+                                        <TextBlock x:Name="BalanceText" Foreground="{StaticResource Gold}" FontSize="34" FontWeight="SemiBold"
+                                                   FontFamily="{StaticResource DisplayFont}" HorizontalAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Stats -->
+                            <UniformGrid Columns="2" Margin="0,14,0,0">
+                                <Border Style="{StaticResource Card}" Margin="0,0,7,0" Padding="16,14">
+                                    <StackPanel>
+                                        <TextBlock Text="{l:T Regions}" Style="{StaticResource Caption}"/>
+                                        <TextBlock x:Name="RegionsText" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Card}" Margin="7,0,0,0" Padding="16,14">
+                                    <StackPanel>
+                                        <TextBlock Text="{l:T PlayTime}" Style="{StaticResource Caption}"/>
+                                        <TextBlock x:Name="PlayTimeText" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <!-- Edit -->
+                            <Border Style="{StaticResource Card}" Margin="0,14,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="{l:T NewBalance}" Style="{StaticResource Caption}"/>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="AmountBox" KeyDown="AmountBox_KeyDown"/>
+                                        <Button x:Name="SaveButton" Grid.Column="1" Content="{l:T SaveMoney}" Style="{StaticResource PrimaryButton}"
+                                                Margin="12,0,0,0" Click="Save_Click"/>
+                                    </Grid>
+                                    <WrapPanel x:Name="QuickAmounts" Margin="0,12,0,0">
+                                        <Button Style="{StaticResource ChipButton}" Margin="0,0,8,0" Tag="1000" Click="Add_Click"/>
+                                        <Button Style="{StaticResource ChipButton}" Margin="0,0,8,0" Tag="10000" Click="Add_Click"/>
+                                        <Button Style="{StaticResource ChipButton}" Margin="0,0,8,0" Tag="100000" Click="Add_Click"/>
+                                        <Button Style="{StaticResource ChipButton}" Margin="0,0,8,0" Tag="1000000" Click="Add_Click"/>
+                                        <Button Content="{l:T Reset}" Style="{StaticResource ChipButton}" Click="ResetAmount_Click"/>
+                                    </WrapPanel>
+                                    <TextBlock Foreground="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0"
+                                               Text="{l:T EditHint}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Backup / misc -->
+                            <Border Style="{StaticResource Card}" Margin="0,14,0,0">
+                                <Grid>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{l:T Backups}" Style="{StaticResource Caption}"/>
+                                        <TextBlock x:Name="BackupInfo" Foreground="{StaticResource Muted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <Button x:Name="RestoreButton" Content="{l:T RestoreLatest}" Margin="0,0,8,0" Click="Restore_Click"/>
+                                        <Button Content="{l:T OpenFolder}" Click="OpenFolder_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+
+            <!-- Status bar -->
+            <Border Grid.Row="2" Margin="20,14,20,16" Background="{StaticResource Surface}" CornerRadius="10" Padding="14,9">
+                <DockPanel>
+                    <Ellipse x:Name="StatusDot" Width="8" Height="8" Fill="{StaticResource Muted}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusText" Text="{l:T Ready}" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
