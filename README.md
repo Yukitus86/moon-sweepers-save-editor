@@ -1,4 +1,4 @@
-# Moon Sweepers Savegame Editor
+﻿# Moon Sweepers Savegame Editor
 
 WPF (.NET 10) tool that changes the money in Moon Sweepers save games (Unity IL2CPP, Steam app 5335510). Ships as one self-contained exe with a dark theme and German/English UI.
 
@@ -9,7 +9,7 @@ Unofficial fan tool, not affiliated with DragDropGames.
 ![Windows x64](https://img.shields.io/badge/Windows-x64-0078D6)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-![Screenshot of the editor](docs/screenshot.png)
+![Screenshot of the editor](docs/editor.png)
 
 ## Features
 
@@ -58,7 +58,7 @@ If size or hash do not match the decompressed data, the game discards the file a
 The money is `MoonWorld.TeamWallet.Balance`, a C# `decimal`. In the raw data it is a dictionary:
 
 ```
-int32 count | count × (byte len, ASCII player, decimal dollars, decimal pendingKilograms)
+int32 count | count Ã— (byte len, ASCII player, decimal dollars, decimal pendingKilograms)
 ```
 
 Decimals use the `BinaryWriter` layout (lo, mid, hi, flags). The balance shown in game is the `dollars` of the `team` entry. Offsets change between saves, so the editor finds the entry by its structure ([Core/WalletRecord.cs](src/MoonSaveEditor/Core/WalletRecord.cs)).
