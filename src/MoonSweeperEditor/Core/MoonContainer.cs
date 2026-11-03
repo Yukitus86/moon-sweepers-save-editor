@@ -3,14 +3,14 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace MoonSaveEditor.Core;
+namespace MoonSweeperEditor.Core;
 
 /// <summary>
-/// Container format used by session.moon:
-/// "1PCM" | uint32 rawSize | byte hashLen (0x40) | hashLen ASCII hex chars = SHA256(raw) | gzip(raw)
-/// The game rejects the file (and falls back to session.moon.bak) when size or hash do not match.
+/// Container used by session.moon:
+///   "1PCM" | uint32 rawSize | byte hashLen (0x40) | hashLen ASCII hex chars = SHA256(raw) | gzip(raw)
+/// The game discards the file (and loads session.moon.bak) when size or hash do not match.
 /// </summary>
-public static class MoonFile
+public static class MoonContainer
 {
     static readonly byte[] Magic = "1PCM"u8.ToArray();
 
@@ -30,7 +30,7 @@ public static class MoonFile
         byte[] raw;
         using (var input = new MemoryStream(file, 9 + hashLen, file.Length - 9 - hashLen))
         using (var gz = new GZipStream(input, CompressionMode.Decompress))
-        using (var output = new MemoryStream((int)Math.Min(size, int.MaxValue)))
+        using (var output = new MemoryStream((int)Math.Min(size, 256u * 1024 * 1024)))
         {
             gz.CopyTo(output);
             raw = output.ToArray();

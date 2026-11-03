@@ -1,10 +1,10 @@
 using System.Windows.Data;
 using System.Windows.Markup;
-using MoonSaveEditor.Core;
+using MoonSweeperEditor.Core;
 
-namespace MoonSaveEditor;
+namespace MoonSweeperEditor;
 
-/// <summary>XAML shorthand for a live-updating translated text: Text="{l:T SaveMoney}".</summary>
+/// <summary>XAML shorthand for a live-updating translated text: Text="{l:T SaveChanges}".</summary>
 [MarkupExtensionReturnType(typeof(object))]
 public sealed class TExtension(string key) : MarkupExtension
 {

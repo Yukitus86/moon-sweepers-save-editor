@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Include="..\..\src\MoonSaveEditor\Core\*.cs" Link="Core\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\MoonSweeperEditor\Core\Loc.cs" Link="Core\Loc.cs" />
+    <Compile Include="..\..\src\MoonSweeperEditor\Core\MoonContainer.cs" Link="Core\MoonContainer.cs" />
+    <Compile Include="..\..\src\MoonSweeperEditor\Core\SessionData.cs" Link="Core\SessionData.cs" />
+    <Compile Include="..\..\src\MoonSweeperEditor\Core\GameData.cs" Link="Core\GameData.cs" />
+    <Compile Include="..\..\src\MoonSweeperEditor\Core\SaveSlot.cs" Link="Core\SaveSlot.cs" />
+    <Compile Include="..\..\src\MoonSweeperEditor\Core\SaveStore.cs" Link="Core\SaveStore.cs" />
   </ItemGroup>
-
 </Project>

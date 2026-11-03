@@ -1,15 +1,14 @@
-using System.Globalization;
 using System.IO;
 using System.Text.Json;
-using MoonSaveEditor.Core;
+using MoonSweeperEditor.Core;
 
-namespace MoonSaveEditor;
+namespace MoonSweeperEditor;
 
-/// <summary>Small per-user settings file in %APPDATA%\MoonSaveEditor\settings.json.</summary>
+/// <summary>Small per-user settings file in %APPDATA%\MoonSweeperEditor\settings.json.</summary>
 public sealed class AppSettings
 {
     static string FilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MoonSaveEditor", "settings.json");
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MoonSweeperEditor", "settings.json");
 
     public string? Language { get; set; }
 
@@ -34,12 +33,8 @@ public sealed class AppSettings
         catch (Exception) { /* losing the language choice is not worth an error dialog */ }
     }
 
-    public UiLanguage ResolveLanguage() => Language switch
-    {
-        "de" => UiLanguage.German,
-        "en" => UiLanguage.English,
-        _ => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de" ? UiLanguage.German : UiLanguage.English,
-    };
+    /// <summary>English unless German was picked before.</summary>
+    public UiLanguage ResolveLanguage() => Language == "de" ? UiLanguage.German : UiLanguage.English;
 
     public static string Code(UiLanguage language) => language == UiLanguage.German ? "de" : "en";
 }

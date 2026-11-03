@@ -1,93 +1,90 @@
-using MoonSaveEditor.Core;
+using MoonSweeperEditor.Core;
 
-// Usage: SelfTest <folder-with-saves>...
-// 1) Every *.moon with 1PCM signature: decode, locate wallet, re-encode round trip, shift round trip.
-// 2) Every slot-N folder: end-to-end SetDollars + Restore on a temporary copy (originals untouched).
+if (args.Length == 2 && args[0] == "--e2e") return EndToEnd(args[1]);
 
-int failures = 0;
-void Check(bool ok, string what)
-{
-    if (!ok) failures++;
-    Console.WriteLine($"  [{(ok ? "OK " : "FAIL")}] {what}");
-}
-
+// Read-only checks: every session.moon below the given folders must parse, round-trip byte-identically,
+// and survive an edit + re-encode cycle (done in memory only).
+int failures = 0, files = 0;
 foreach (string root in args)
+foreach (string path in Directory.EnumerateFiles(root, "session.moon*", SearchOption.AllDirectories))
 {
-    foreach (string file in Directory.EnumerateFiles(root, "session*.moon*", SearchOption.AllDirectories))
+    if (path.EndsWith(".editor-tmp")) continue;
+    files++;
+    try
     {
-        Console.WriteLine(Path.GetRelativePath(root, file));
-        try
+        byte[] raw = MoonContainer.ReadRaw(path);
+        var data = SessionData.Parse(raw);
+        if (!data.Build().AsSpan().SequenceEqual(raw)) throw new Exception("round-trip differs");
+
+        // Edit everything the UI can touch, then re-encode and parse again.
+        data.Team!.Dollars = 123456789.12m;
+        foreach (var s in data.Stats) s.Value += 1;
+        foreach (var inv in data.Inventories)
+            foreach (var t in GameData.Tools.Where(t => !t.AlwaysOwned))
+                if (!inv.Tools.Any(x => x.Id == t.Id)) inv.Tools.Add(new OwnedTool { Id = t.Id });
+        foreach (var set in data.ToolLevels)
         {
-            byte[] raw = MoonFile.ReadRaw(file);
-            var w = WalletRecord.Locate(raw);
-            Console.WriteLine($"  {w}");
-
-            byte[] again = MoonFile.Decode(MoonFile.Encode(raw));
-            Check(again.AsSpan().SequenceEqual(raw), "Encode/Decode verlustfrei");
-
-            byte[] shifted = MoonFile.Decode(MoonFile.Encode(w.WithBalance(raw, 1234567.89m)));
-            var w2 = WalletRecord.Locate(shifted);
-            Check(w2.BalanceOffset == w.BalanceOffset && w2.Balance == 1234567.89m, "Kontostand 1.234.567,89 gesetzt");
-            Check(shifted.Length == raw.Length, "Länge unverändert");
-            int diff = 0;
-            for (int i = 0; i < raw.Length; i++) if (raw[i] != shifted[i]) diff++;
-            Check(diff <= 16, $"nur Geld-Bytes geändert ({diff} Bytes)");
-            if (slotDollarsFor(file) is double sd) Check(Math.Abs((double)w.Balance - sd) < 1e-6, $"Kontostand = slot.json dollars ({sd})");
+            foreach (var t in GameData.Tools.Where(t => t.Upgradable))
+                if (!set.Levels.Any(l => l.Id == t.Id)) set.Levels.Add(new ToolLevel { Id = t.Id, Level = 1 });
+            set.Levels.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            foreach (var l in set.Levels) l.Level = GameData.MaxToolLevel;
         }
-        catch (Exception ex) { failures++; Console.WriteLine("  [FAIL] " + ex.Message); }
+        foreach (var tree in data.Trees)
+            foreach (var n in GameData.Nodes)
+                if (tree.Nodes.FirstOrDefault(x => x.Id == n.Id) is { } node) node.Level++;
+                else tree.Nodes.Add(new TreeNode { Id = n.Id, Level = 1 });
+        foreach (var c in data.Canisters) c.Amount = c.Capacity;
+
+        byte[] edited = data.Build();
+        var again = SessionData.Parse(MoonContainer.Decode(MoonContainer.Encode(edited)));
+        if (again.Team!.Dollars != 123456789.12m) throw new Exception("balance not kept");
+        if (again.Stats.Count != data.Stats.Count || again.Stats.Zip(data.Stats).Any(p => p.First.Value != p.Second.Value)) throw new Exception("stats not kept");
+        if (again.Trees[0].Nodes.Count < GameData.Nodes.Count) throw new Exception("tree not kept");
+        if (!again.Raw.AsSpan(again.End).SequenceEqual(raw.AsSpan(data.End))) throw new Exception("tail changed");
+
+        Console.WriteLine($"OK   {path}\n     start=0x{data.Start:X} end=0x{data.End:X} size={raw.Length}, " +
+            $"wallet={data.Team.Dollars}, tools={data.Inventories.Sum(i => i.Tools.Count)}, nodes={data.Trees.Sum(t => t.Nodes.Count)}, " +
+            $"canisters={data.Canisters.Count}, stats={string.Join(" | ", data.Stats.Select(s => s.Label + "=" + s.Value))}");
     }
-
-    foreach (string slotJson in Directory.EnumerateFiles(root, "slot.json", SearchOption.AllDirectories))
+    catch (Exception ex)
     {
-        string slotDir = Path.GetDirectoryName(slotJson)!;
-        if (!System.Text.RegularExpressions.Regex.IsMatch(Path.GetFileName(slotDir), @"^slot-\d+$")) continue;
-        Console.WriteLine("E2E " + Path.GetRelativePath(root, slotDir));
-
-        string temp = Path.Combine(Path.GetTempPath(), "MoonSelfTest-" + Guid.NewGuid().ToString("N"));
-        string tempSlot = Path.Combine(temp, "MoonSessions", Path.GetFileName(slotDir));
-        try
-        {
-            CopyWithoutChunks(slotDir, tempSlot);
-            var store = new SaveStore(temp);
-            var slot = store.LoadSlots().Single();
-            Check(slot.CanEdit, $"Slot lesbar (Geld {slot.Balance:N2}, Error={slot.Error ?? "-"})");
-            byte[] origSession = File.ReadAllBytes(slot.SessionPath!);
-            byte[] origJson = File.ReadAllBytes(slot.SlotJsonPath);
-
-            var result = store.SetBalance(slot, 1_000_000m);
-            var reloaded = store.LoadSlots().Single();
-            Check(reloaded.Dollars == 1_000_000, $"slot.json dollars = {reloaded.Dollars}");
-            Check(reloaded.Balance == 1_000_000m, $"Team-Konto: {slot.Balance:N2} -> {reloaded.Balance:N2}");
-            Console.WriteLine("  slot.json: " + File.ReadAllText(slot.SlotJsonPath));
-
-            store.Restore(reloaded, result.BackupDir);
-            Check(File.ReadAllBytes(slot.SessionPath!).AsSpan().SequenceEqual(origSession), "Restore session.moon identisch");
-            Check(File.ReadAllBytes(slot.SlotJsonPath).AsSpan().SequenceEqual(origJson), "Restore slot.json identisch");
-        }
-        catch (Exception ex) { failures++; Console.WriteLine("  [FAIL] " + ex); }
-        finally { try { Directory.Delete(temp, true); } catch { } }
+        failures++;
+        Console.WriteLine($"FAIL {path}: {ex.Message}");
     }
 }
-
-Console.WriteLine(failures == 0 ? "ALLE TESTS OK" : $"{failures} FEHLER");
+Console.WriteLine($"{files} files, {failures} failures");
 return failures == 0 ? 0 : 1;
 
-// slot.json dollars of the live session.moon next to it (only for session.moon itself, not backups).
-static double? slotDollarsFor(string sessionFile)
+// Writes through SaveStore exactly like the editor does. Only use on a COPY of the save folder.
+static int EndToEnd(string root)
 {
-    if (Path.GetFileName(sessionFile) != "session.moon") return null;
-    string json = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(sessionFile)!)!, "slot.json");
-    if (!File.Exists(json)) return null;
-    var node = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(json));
-    double d = node!["dollars"]!.GetValue<double>();
-    return d == 6000.0 ? null : d; // 6000 was written by the old broken edit, not by the game
-}
+    var store = new SaveStore(root);
+    var slot = store.LoadSlots().First(s => s.CanEdit);
+    byte[] before = File.ReadAllBytes(slot.SessionPath!);
+    var data = SessionData.Parse(slot.Data!.Raw);
+    data.Team!.Dollars = 4242424.42m;
+    data.Trees[0].Nodes[0].Level += 1;
+    data.Canisters[1].Amount = data.Canisters[1].Capacity;
+    string backup = store.Save(slot, data);
 
-static void CopyWithoutChunks(string from, string to)
-{
-    Directory.CreateDirectory(to);
-    foreach (string f in Directory.EnumerateFiles(from))
-        if (!Path.GetFileName(f).StartsWith("chunk_")) File.Copy(f, Path.Combine(to, Path.GetFileName(f)));
-    foreach (string d in Directory.EnumerateDirectories(from))
-        CopyWithoutChunks(d, Path.Combine(to, Path.GetFileName(d)));
+    var reloaded = store.LoadSlots().First(s => s.Name == slot.Name);
+    Check(reloaded.Data!.Team!.Dollars == 4242424.42m, "balance written");
+    Check(reloaded.Dollars == 4242424.42, "slot.json dollars updated");
+    Check(reloaded.Data.Trees[0].Nodes[0].Level == slot.Data.Trees[0].Nodes[0].Level + 1, "tree written");
+    Check(File.ReadAllBytes(Path.Combine(backup, "session.moon")).AsSpan().SequenceEqual(before), "backup has old file");
+
+    // Stale data must be refused (file changed on disk since load).
+    try { store.Save(slot, SessionData.Parse(slot.Data.Raw)); Check(false, "stale save refused"); }
+    catch (InvalidOperationException) { Check(true, "stale save refused"); }
+
+    store.Restore(reloaded, backup);
+    Check(File.ReadAllBytes(slot.SessionPath!).AsSpan().SequenceEqual(before), "restore puts old file back");
+    Console.WriteLine("end-to-end OK");
+    return 0;
+
+    static void Check(bool ok, string what)
+    {
+        Console.WriteLine((ok ? "  ok   " : "  FAIL ") + what);
+        if (!ok) Environment.Exit(1);
+    }
 }
