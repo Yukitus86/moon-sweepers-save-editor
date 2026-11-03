@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Linux build of the editor (Avalonia UI). Shares Core, EditorRows and AppSettings with the Windows (WPF) project.
+    Publish: dotnet publish -c Release -r linux-x64
+    Without -r it builds for the current OS, so the UI can be tried on Windows as well.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>MoonSweeperEditor</AssemblyName>
+    <RootNamespace>MoonSweeperEditor</RootNamespace>
+    <Product>Moon Sweepers Savegame Editor (Linux)</Product>
+    <Version>2.0.0</Version>
+    <Authors>Yukitus86</Authors>
+    <Copyright>Copyright © 2026 Yukitus86</Copyright>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- Single self-contained file when a runtime is given -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\MoonSweeperEditor\Core\*.cs" LinkBase="Core" />
+    <Compile Include="..\MoonSweeperEditor\EditorRows.cs" Link="EditorRows.cs" />
+    <Compile Include="..\MoonSweeperEditor\AppSettings.cs" Link="AppSettings.cs" />
+    <AvaloniaResource Include="..\MoonSweeperEditor\Assets\icon.png" Link="Assets\icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+  </ItemGroup>
+
+</Project>

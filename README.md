@@ -7,6 +7,7 @@ Unofficial fan tool, not affiliated with DragDropGames.
 [![Latest release](https://img.shields.io/github/v/release/Yukitus86/moon-sweepers-save-editor)](../../releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Yukitus86/moon-sweepers-save-editor/total)](../../releases)
 ![Windows x64](https://img.shields.io/badge/Windows-x64-0078D6)
+![Linux x64 untested](https://img.shields.io/badge/Linux%20x64-untested-lightgrey)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ![Money tab](docs/money.png)
@@ -51,6 +52,24 @@ Notes:
 - Vehicles are not editable yet.
 - `slot.json` is only the main-menu preview. The editor updates its `dollars`; play time there is overwritten by the game.
 
+## Linux (experimental, untested)
+
+A separate Linux build, made on request of a user. **It has not been tested on Linux** – it was built and checked on Windows only. Use it at your own risk; the automatic backups work the same way.
+
+1. Download `MoonSweeperEditor-linux-x64.tar.gz` from the [latest release](../../releases/latest).
+2. Close the game, then:
+   ```
+   tar -xzf MoonSweeperEditor-linux-x64.tar.gz
+   ./MoonSweeperEditor
+   ```
+
+- x86-64 desktop Linux (X11 or XWayland); the Steam Deck in desktop mode should work too. Uses the usual desktop libraries (fontconfig, ICU).
+- Moon Sweepers is a Windows game, so on Linux it runs through Steam Play (Proton) and saves into its Wine prefix. The editor searches every Steam library (normal, Flatpak and Snap Steam) for
+  `steamapps/compatdata/5335510/pfx/drive_c/users/steamuser/AppData/LocalLow/DragDropGames/MoonSweepers`.
+  If it finds nothing, click **Choose save folder …** in the sidebar and select the `MoonSweepers` folder; the choice is remembered.
+- Same tabs and functions as the Windows build. The UI is made with Avalonia instead of WPF, so it looks slightly different, and the emoji icons are left out.
+- Settings are stored in `~/.config/MoonSweeperEditor/settings.json`.
+
 ## Save format
 
 Saves live in `%USERPROFILE%\AppData\LocalLow\DragDropGames\MoonSweepers\MoonSessions\slot-N\<account hash>\session.moon`:
@@ -93,6 +112,14 @@ dotnet run -c Release -- "%USERPROFILE%\AppData\LocalLow\DragDropGames\MoonSweep
 
 `dotnet run -c Release -- --e2e <folder>` exercises the write path (backup, write, stale-save check, restore). Only run it on a **copy** of the save folder.
 
+Linux build (single file, self-contained):
+
+```
+dotnet publish src/MoonSweeperEditor.Linux -c Release -r linux-x64 -o publish/linux
+```
+
+Without `-r` it builds for the current OS, so the Linux UI can be tried on Windows too. `tests/LinuxUiTest` drives that UI headless on a **copy** of the save folder (edit, save, check the file): `dotnet run -- <copy of the MoonSweepers folder>`.
+
 Command-line options of the editor, mainly for testing and screenshots:
 
 | Option | Effect |
@@ -111,7 +138,9 @@ Command-line options of the editor, mainly for testing and screenshots:
 | `src/MoonSweeperEditor/Core/SaveSlot.cs`, `SaveStore.cs` | Slots, `slot.json`, backups, safe writing |
 | `src/MoonSweeperEditor/Core/GameData.cs`, `Loc.cs` | Tool/node ids and names, English/German texts |
 | `src/MoonSweeperEditor/MainWindow.xaml` | UI; `Themes/` holds the dark theme and the flags |
+| `src/MoonSweeperEditor.Linux` | Linux build (Avalonia UI, save folder search under Proton); uses the same `Core/` |
 | `tests/SelfTest` | Parser and write-path checks |
+| `tests/LinuxUiTest` | Headless test of the Linux UI on a save copy |
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed since 1.0.
 

@@ -66,6 +66,14 @@ public sealed class Loc : INotifyPropertyChanged
         ["DiscardTitle"] = ("Änderungen verwerfen", "Discard changes"),
         ["DiscardQuestion"] = ("Es gibt ungespeicherte Änderungen. Verwerfen?", "There are unsaved changes. Discard them?"),
         ["Error"] = ("Fehler", "Error"),
+        ["Yes"] = ("Ja", "Yes"),
+        ["No"] = ("Nein", "No"),
+        ["Ok"] = ("OK", "OK"),
+        ["ChooseSaveFolder"] = ("Spielstand-Ordner wählen …", "Choose save folder …"),
+        ["ChooseSaveFolderTitle"] = ("Ordner \"MoonSweepers\" wählen (enthält MoonSessions)", "Select the \"MoonSweepers\" folder (contains MoonSessions)"),
+        ["NotASaveFolder"] = ("In diesem Ordner gibt es keinen Unterordner \"MoonSessions\".", "This folder has no \"MoonSessions\" subfolder."),
+        ["NoSavesFoundHint"] = ("Keine Spielstände gefunden. Über \"Spielstand-Ordner wählen\" den Ordner MoonSweepers auswählen.",
+                                "No save games found. Use \"Choose save folder\" and select the MoonSweepers folder."),
         ["UnexpectedError"] = ("Unerwarteter Fehler", "Unexpected error"),
 
         // Tabs
@@ -136,6 +144,8 @@ public sealed class Loc : INotifyPropertyChanged
         ["ColFill"] = ("Füllstand", "Fill level"),
         ["StorageSummary"] = ("{0} Einträge · {1} von {2} kg belegt. Inhalt in der Tabelle per Doppelklick ändern.",
                               "{0} entries · {1} of {2} kg used. Double-click a cell in the table to change the contents."),
+
+        ["StorageSummaryShort"] = ("{0} Einträge · {1} von {2} kg belegt.", "{0} entries · {1} of {2} kg used."),
 
         // Backups
         ["BackupNow"] = ("Backup jetzt erstellen", "Create backup now"),

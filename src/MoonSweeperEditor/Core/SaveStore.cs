@@ -27,7 +27,28 @@ public sealed class SaveStore(string root)
             .ToList();
     }
 
-    public static bool IsGameRunning() => Process.GetProcessesByName("MoonSweepers").Length > 0;
+    public static bool IsGameRunning() =>
+        OperatingSystem.IsLinux() ? IsGameRunningLinux() : Process.GetProcessesByName("MoonSweepers").Length > 0;
+
+    // Under Proton the kernel name is "MoonSweepers.ex" (cut to 15 chars), a native build would be "MoonSweepers.x86_64".
+    static bool IsGameRunningLinux()
+    {
+        try
+        {
+            foreach (string dir in Directory.EnumerateDirectories("/proc"))
+            {
+                if (!Path.GetFileName(dir).All(char.IsAsciiDigit)) continue;
+                try
+                {
+                    if (File.ReadAllText(Path.Combine(dir, "comm")).StartsWith("MoonSweepers", StringComparison.Ordinal)) return true;
+                }
+                catch (IOException) { /* process ended or no access */ }
+                catch (UnauthorizedAccessException) { }
+            }
+        }
+        catch (Exception) { /* no /proc: assume the game is not running */ }
+        return false;
+    }
 
     /// <summary>Writes the edited session. Returns the backup folder.</summary>
     public string Save(SaveSlot slot, SessionData data) => WriteRaw(slot, data.Build(), data.Raw);

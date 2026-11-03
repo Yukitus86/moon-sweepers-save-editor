@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.0 – Linux build (experimental)
+
+Separate Linux build of 2.0, made on request of a user. **Not tested on Linux.** The Windows build is unchanged.
+
+- Avalonia UI with the same tabs and functions as the Windows build
+- Finds the save in the Proton prefix of every Steam library (normal, Flatpak, Snap); otherwise "Choose save folder …"
+- Detects the running game under Proton
+- Single self-contained file for x86-64 (`MoonSweeperEditor-linux-x64.tar.gz`)
+
 ## 2.0.0
 
 Rewrite. 1.0 could only change the money; 2.0 reads the whole player block of the save.

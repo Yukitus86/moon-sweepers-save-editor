@@ -12,6 +12,9 @@ public sealed class AppSettings
 
     public string? Language { get; set; }
 
+    /// <summary>Save folder picked by hand (Linux build; the Windows build always uses the default folder).</summary>
+    public string? SaveRoot { get; set; }
+
     public static AppSettings Load()
     {
         try
