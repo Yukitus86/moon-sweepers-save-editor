@@ -40,7 +40,7 @@ German UI: [docs/upgrade-tree-de.png](docs/upgrade-tree-de.png)
 
 ## Usage
 
-1. Download `MoonSweeperEditor.exe` from the [latest release](../../releases/latest) (Windows 10/11 x64).
+1. Download `MoonSweeperEditor.exe` from the [latest release](../../releases/latest) (Windows 10/11 x64). If your antivirus deletes it, see [Antivirus deleted or blocked the exe](#antivirus-deleted-or-blocked-the-exe).
 2. Close the game.
 3. Start the editor, pick a slot, change what you want, click **Save changes**.
 
@@ -51,6 +51,45 @@ Notes:
 - Tool levels go up to 3. The game defines the maximum level of each upgrade-tree node; the editor allows 0–10 and the game may cap higher values itself.
 - Vehicles are not editable yet.
 - `slot.json` is only the main-menu preview. The editor updates its `dollars`; play time there is overwritten by the game.
+
+## Antivirus deleted or blocked the exe
+
+Some antivirus programs quarantine or delete `MoonSweeperEditor.exe` right after the download or on the first start. This is a **false positive**. Typical names are `Trojan:Win32/Wacatac.B!ml`, `IDP.Generic` or `Gen:Variant…`; the `!ml` / `Generic` part means a machine-learning guess, not a known virus.
+
+Why it happens:
+
+- The exe is not code-signed (a certificate costs money every year).
+- It is a new file with few downloads, so it has no "reputation" yet.
+- It is a self-contained single-file .NET app with compressed contents. To a heuristic scanner that looks similar to a packed program.
+
+Check it yourself:
+
+- [VirusTotal scan of `MoonSweeperEditor.exe` v2.0.0](https://www.virustotal.com/gui/file/c067c3b687ac149f83a447c4c69465a7338470590b0f1a633d0c6b96ae8a375c/detection): 0 of 69 scanners flagged it (November 2026).
+- Compare the SHA256 with the one in the [release notes](../../releases/latest). In PowerShell: `Get-FileHash .\MoonSweeperEditor.exe`
+- Or don't trust the exe at all and [build it yourself](#build) from this source code.
+
+Get the file back:
+
+- **Windows Defender:** Windows Security → Virus & threat protection → **Protection history** → click the entry → Actions → **Restore**. To stop it from happening again: Virus & threat protection settings → **Exclusions** → Add an exclusion → Folder → pick the editor's folder.
+- **Other antivirus (Avast, AVG, Norton, Bitdefender, Kaspersky …):** open its quarantine (sometimes called "virus chest"), restore the file and add an exception for it or its folder.
+- **"Windows protected your PC"** (SmartScreen, blue window): click **More info → Run anyway**. That is only a warning, nothing is deleted.
+
+Only exclude this one file or folder. Do not turn your antivirus off.
+
+You can help: report the false positive to your antivirus vendor, for Windows Defender at <https://www.microsoft.com/en-us/wdsi/filesubmission> ("Incorrectly detected as malware"). Every report makes it less likely for the next user.
+
+<details>
+<summary>🇩🇪 Deutsch: Antivirus hat die exe gelöscht oder blockiert</summary>
+
+Manche Virenscanner löschen `MoonSweeperEditor.exe` direkt nach dem Download oder beim ersten Start oder schieben sie in die Quarantäne. Das ist ein **Fehlalarm**: Die exe ist nicht signiert, noch neu (wenig Downloads) und eine gepackte .NET-Einzeldatei. Bei [VirusTotal](https://www.virustotal.com/gui/file/c067c3b687ac149f83a447c4c69465a7338470590b0f1a633d0c6b96ae8a375c/detection) meldet keiner der 69 Scanner etwas.
+
+- **Windows Defender:** Windows-Sicherheit → Viren- & Bedrohungsschutz → **Schutzverlauf** → Eintrag anklicken → Aktionen → **Wiederherstellen**. Danach unter Einstellungen für Viren- & Bedrohungsschutz → **Ausschlüsse** → Ausschluss hinzufügen → Ordner → den Ordner des Editors wählen.
+- **Andere Virenscanner:** Quarantäne öffnen, Datei wiederherstellen, Ausnahme für die Datei oder den Ordner anlegen.
+- **„Der Computer wurde durch Windows geschützt“:** **Weitere Informationen → Trotzdem ausführen**.
+
+Nur diese eine Datei bzw. diesen Ordner ausnehmen, den Virenschutz nicht ausschalten. Wer der exe nicht traut, kann sie aus dem Quellcode selbst bauen (siehe [Build](#build)).
+
+</details>
 
 ## Linux (experimental, untested)
 
