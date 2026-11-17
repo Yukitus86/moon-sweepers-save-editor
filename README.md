@@ -127,7 +127,7 @@ piles        int32 nextId, int32 n × (int32, string, 57 bytes)
 buildings    int32 nextId, int32 n × (int32, string, 32 bytes)
 hotbars      int32 n × (string owner, int32 selected, int32 m × string tool)
 canisters    int32 n × (string key, double amount, double capacity)
-conveyors    int32 nextId, int32 n × (int32, string, 48 bytes)
+conveyors    int32 nextId, int32 n × (int32, string, 50 bytes)   48 bytes before the game update of 2026-11-16
 rotations    int32 n × 24 bytes, int32, int32
 tool levels  int32 n × (string owner, string equipped, int32 m × (string tool, int32 level, double))   sorted by tool id
 tree         int32 n × (string owner, int32 m × (string node, int32 level))

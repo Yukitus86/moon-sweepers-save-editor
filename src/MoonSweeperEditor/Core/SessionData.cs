@@ -86,7 +86,7 @@ public sealed class UpgradeTree
 ///   buildings     int32 nextId, int32 n × (int32, string, 32 bytes)
 ///   hotbars       int32 n × (string owner, int32 selected, int32 m × string tool)
 ///   canisters     int32 n × (string key, double amount, double capacity)
-///   conveyors     int32 nextId, int32 n × (int32, string, 48 bytes)
+///   conveyors     int32 nextId, int32 n × (int32, string, 50 bytes; 48 before the 2026-11-16 update)
 ///   rotations     int32 n × 24 bytes, int32, int32
 ///   tool levels   int32 n × (string owner, string equipped, int32 m × (string tool, int32 level, double))
 ///   upgrade tree  int32 n × (string owner, int32 m × (string node, int32 level))
@@ -120,6 +120,10 @@ public sealed class SessionData
     public int ConveyorCount { get; private set; }
 
     byte[] piles = [], buildings = [], conveyors = [], rotations = [];
+    int conveyorSize;
+
+    // Bytes after the owner string of each conveyor: 50 since the game update of 2026-11-16, 48 before.
+    static readonly int[] ConveyorSizes = [50, 48];
 
     SessionData(byte[] raw) => Raw = raw;
 
@@ -135,8 +139,9 @@ public sealed class SessionData
             if (i < 0) break;
             i += from;
             foreach (int start in CandidateStarts(raw, i))
+            foreach (int conveyorSize in ConveyorSizes)
             {
-                var parsed = TryParse(raw, start);
+                var parsed = TryParse(raw, start, conveyorSize);
                 if (parsed is not null && !found.Any(f => f.Start == parsed.Start)) found.Add(parsed);
             }
             from = i + 1;
@@ -169,11 +174,11 @@ public sealed class SessionData
         }
     }
 
-    static SessionData? TryParse(byte[] raw, int start)
+    static SessionData? TryParse(byte[] raw, int start, int conveyorSize)
     {
         try
         {
-            var data = new SessionData(raw) { Start = start };
+            var data = new SessionData(raw) { Start = start, conveyorSize = conveyorSize };
             data.Read(new Reader(raw, start));
             byte[] again = data.SerializeBlock();
             if (!again.AsSpan().SequenceEqual(raw.AsSpan(start, data.End - start))) return null;
@@ -235,7 +240,7 @@ public sealed class SessionData
         s = r.Pos;
         r.I32();
         ConveyorCount = r.Count(10_000_000);
-        for (int k = 0; k < ConveyorCount; k++) { r.I32(); r.Text(); r.Skip(48); }
+        for (int k = 0; k < ConveyorCount; k++) { r.I32(); r.Text(); r.Skip(conveyorSize); }
         conveyors = r.Slice(s);
 
         s = r.Pos;

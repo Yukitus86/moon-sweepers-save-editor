@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.1
+
+Fix for the Moon Sweepers update of 16 November 2026 (Steam build 26682829).
+
+- Saves written by the new game version could not be opened ("Player data not found"). The game now stores 2 more bytes per conveyor; the editor reads both the old and the new layout.
+- Windows and Linux build
+
 ## 2.0.0 – Linux build (experimental)
 
 Separate Linux build of 2.0, made on request of a user. **Not tested on Linux.** The Windows build is unchanged.
