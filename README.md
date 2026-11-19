@@ -10,6 +10,15 @@ Unofficial fan tool, not affiliated with DragDropGames.
 ![Linux x64](https://img.shields.io/badge/Linux-x64-FCC624)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+> [!TIP]
+> **✔ Update 2.1.0: modded saves & Mars Sweepers**
+> "Player data … not found" with modded saves? Fixed in [2.1.0](../../releases/tag/v2.1.0), together with other save loading errors.
+> Tested in game with Mars Sweepers, Belt Overdrive and Titan Broom, see [Mods](#mods).
+
+> [!NOTE]
+> **🐧 Linux players: does 2.1.0 work for you?**
+> I can't test Linux myself. Please fill in the short [Linux test report](../../issues/new?template=linux-test-report.yml), **also when everything works**. Then I can mark it as tested in the [Linux](#linux) section. Thanks!
+
 ![Money tab](docs/money.png)
 
 ## Features
