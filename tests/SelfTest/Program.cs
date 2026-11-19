@@ -44,7 +44,7 @@ foreach (string path in Directory.EnumerateFiles(root, "session.moon*", SearchOp
 
         Console.WriteLine($"OK   {path}\n     start=0x{data.Start:X} end=0x{data.End:X} size={raw.Length}, " +
             $"wallet={data.Team.Dollars}, tools={data.Inventories.Sum(i => i.Tools.Count)}, nodes={data.Trees.Sum(t => t.Nodes.Count)}, " +
-            $"canisters={data.Canisters.Count}, stats={string.Join(" | ", data.Stats.Select(s => s.Label + "=" + s.Value))}");
+            $"canisters={data.Canisters.Count}, buildings={data.BuildingCount}, conveyors={data.ConveyorCount}, stats={string.Join(" | ", data.Stats.Select(s => s.Label + "=" + s.Value))}");
     }
     catch (Exception ex)
     {
