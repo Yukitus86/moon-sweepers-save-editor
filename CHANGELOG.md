@@ -7,9 +7,9 @@ Fix for the Moon Sweepers update of 16 November 2026 (Steam build 26682829).
 - Saves written by the new game version could not be opened ("Player data not found"). The game now stores 2 more bytes per conveyor; the editor reads both the old and the new layout.
 - Windows and Linux build
 
-## 2.0.0 – Linux build (experimental)
+## 2.0.0 – Linux build
 
-Separate Linux build of 2.0, made on request of a user. **Not tested on Linux.** The Windows build is unchanged.
+Separate Linux build of 2.0, made on request of a user. Not tested on Linux at release; Linux players have since reported that it works. The Windows build is unchanged.
 
 - Avalonia UI with the same tabs and functions as the Windows build
 - Finds the save in the Proton prefix of every Steam library (normal, Flatpak, Snap); otherwise "Choose save folder …"

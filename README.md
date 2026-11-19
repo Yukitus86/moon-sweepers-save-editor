@@ -7,7 +7,7 @@ Unofficial fan tool, not affiliated with DragDropGames.
 [![Latest release](https://img.shields.io/github/v/release/Yukitus86/moon-sweepers-save-editor)](../../releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Yukitus86/moon-sweepers-save-editor/total)](../../releases)
 ![Windows x64](https://img.shields.io/badge/Windows-x64-0078D6)
-![Linux x64 untested](https://img.shields.io/badge/Linux%20x64-untested-lightgrey)
+![Linux x64](https://img.shields.io/badge/Linux-x64-FCC624)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ![Money tab](docs/money.png)
@@ -91,9 +91,9 @@ Nur diese eine Datei bzw. diesen Ordner ausnehmen, den Virenschutz nicht ausscha
 
 </details>
 
-## Linux (experimental, untested)
+## Linux
 
-A separate Linux build, made on request of a user. **It has not been tested on Linux** – it was built and checked on Windows only. Use it at your own risk; the automatic backups work the same way.
+A separate Linux build, made on request of a user. Linux players on Steam report that it works. The automatic backups work the same way as on Windows.
 
 1. Download `MoonSweeperEditor-linux-x64.tar.gz` from the [latest release](../../releases/latest).
 2. Close the game, then:
