@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.0
+
+Saves from modded games, the Mars Sweepers mod, and belts with bends.
+
+- **Mars Sweepers** (Nexus mod 148): Mars save slots are listed below the Moon slots as "Mars · Slot N" and can be edited like Moon saves. Editor backups for them go to `EditorBackups\mars-slot-N`. The mod's `mars-production.json` is linked to the new save automatically (otherwise the mod rejects it with "production file does not match this save") and is backed up and restored together with it.
+- Saves with conveyor belts that have bends could not be opened ("Player data not found", reading stopped in section "rotations"). Since the 16 November update each belt stores a list of extra points, which is empty for straight belts; the editor now reads that list.
+- Saves that contain tools or upgrades added by mods could not be opened ("Player data not found"). The editor now accepts mod ids with upper case, several dots, `:` or `-`.
+- Entries from mods are kept as they are: their levels are only changed when you change them yourself, and "Unlock all" / "All to max level" / the "All …" tree buttons only touch the game's own tools and upgrades.
+- Tools and upgrades added by mods carry a yellow **MOD** tag (with a tooltip) in the Tools and Upgrade tree tabs, and are marked "· Mod" in the hotbar lists.
+- If a save still cannot be read, the error now names the section where reading stopped, so it can be reported.
+- Tested on Windows 11 with Mars Sweepers 0.1.1, Belt Overdrive 1.0.1 and Titan Broom 1.0.0 (edited saves load in the game), see the README.
+- Linux build: same changes; passes the automated UI test but is **not tested on a real Linux system yet**. Reports are welcome through the new "Linux test report" issue form.
+
 ## 2.0.1
 
 Fix for the Moon Sweepers update of 16 November 2026 (Steam build 26682829).

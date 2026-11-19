@@ -187,7 +187,7 @@ public partial class MainWindow : Window
         {
             var slots = store.LoadSlots();
             SlotList.ItemsSource = slots;
-            var pick = slots.FirstOrDefault(s => s.Name == selectName) ?? slots.FirstOrDefault(s => s.CanEdit) ?? slots.FirstOrDefault();
+            var pick = slots.FirstOrDefault(s => s.Key == selectName) ?? slots.FirstOrDefault(s => s.CanEdit) ?? slots.FirstOrDefault();
             SlotList.SelectedItem = pick;
             ShowSlot(pick);
             if (pick is null) SetStatus(Loc.T("NoSavesFound", App.ShowPath(store.SessionsDir)), StatusKind.Error);
@@ -288,7 +288,7 @@ public partial class MainWindow : Window
             var entry = levels?.Levels.FirstOrDefault(l => l.Id == t.Id);
             bool inInventory = inv?.Tools.Any(x => x.Id == t.Id) == true;
             var row = new ToolRow { Id = t.Id, Upgradable = t.Upgradable, AlwaysOwned = t.AlwaysOwned };
-            row.InitState(t.AlwaysOwned || inInventory, Math.Clamp(entry?.Level ?? 1, GameData.MinToolLevel, GameData.MaxToolLevel));
+            row.InitState(t.AlwaysOwned || inInventory, entry?.Level ?? 1);
             toolRows.Add(row);
         }
 
@@ -314,7 +314,7 @@ public partial class MainWindow : Window
         var tree = Pick(data.Trees, t => t.Owner);
         var known = GameData.Nodes.ToList();
         foreach (var n in tree?.Nodes ?? [])
-            if (known.All(k => k.Id != n.Id)) known.Add(new NodeInfo(n.Id, "CatOther", n.Id, n.Id));
+            if (known.All(k => k.Id != n.Id)) known.Add(new NodeInfo(n.Id, "CatMod", n.Id, n.Id));
 
         foreach (var n in known)
         {
@@ -441,13 +441,17 @@ public partial class MainWindow : Window
 
     void UnlockAllTools_Click(object sender, RoutedEventArgs e)
     {
-        foreach (var r in toolRows.Where(r => r.CanToggle)) r.Owned = true;
+        foreach (var r in toolRows.Where(r => r.CanToggle && IsGameTool(r))) r.Owned = true;
     }
 
     void MaxAllTools_Click(object sender, RoutedEventArgs e)
     {
-        foreach (var r in toolRows.Where(r => r.Upgradable)) r.Level = GameData.MaxToolLevel;
+        foreach (var r in toolRows.Where(r => r.Upgradable && IsGameTool(r))) r.Level = GameData.MaxToolLevel;
     }
+
+    // Bulk buttons only touch the game's own tools and nodes; entries added by mods are changed one by one.
+    static bool IsGameTool(ToolRow r) => !r.IsMod;
+    static bool IsGameNode(NodeRow r) => !r.IsMod;
 
     void AnyCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => MarkDirty();
 
@@ -461,13 +465,13 @@ public partial class MainWindow : Window
     void TreeAll_Click(object sender, RoutedEventArgs e)
     {
         int delta = int.Parse((string)((Button)sender).Tag, CultureInfo.InvariantCulture);
-        foreach (var r in nodeRows) r.Level += delta;
+        foreach (var r in nodeRows.Where(IsGameNode)) r.Level += delta;
     }
 
     void TreeSetAll_Click(object sender, RoutedEventArgs e)
     {
         if (TreeAllLevel.SelectedItem is int level)
-            foreach (var r in nodeRows) r.Level = level;
+            foreach (var r in nodeRows.Where(IsGameNode)) r.Level = level;
     }
 
     // ---------------------------------------------------------------- canisters
@@ -519,7 +523,7 @@ public partial class MainWindow : Window
             Apply(fresh, balance);
             string backup = store.Save(current, fresh);
             dirty = false;
-            LoadSlots(current.Name);
+            LoadSlots(current.Key);
             SetStatus(Loc.T("Saved", Path.GetFileName(backup)), StatusKind.Good);
         }
         catch (Exception ex)
@@ -564,14 +568,15 @@ public partial class MainWindow : Window
         var levels = Pick(d.ToolLevels, l => l.Owner);
         if (levels is not null)
         {
+            bool added = false;
             foreach (var row in toolRows.Where(r => r.Upgradable))
             {
                 var entry = levels.Levels.FirstOrDefault(l => l.Id == row.Id);
-                if (entry is not null) entry.Level = row.Level;
-                else if (row.Owned) levels.Levels.Add(new ToolLevel { Id = row.Id, Level = row.Level });
+                if (entry is not null) { if (row.LevelChanged) entry.Level = row.Level; }
+                else if (row.Owned) { levels.Levels.Add(new ToolLevel { Id = row.Id, Level = row.Level }); added = true; }
             }
-            // The game writes this list sorted by tool id.
-            levels.Levels.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            // The game writes this list sorted by tool id; untouched lists (e.g. with mod tools) keep their order.
+            if (added) levels.Levels.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
 
             string equipped = EquippedBox.SelectedValue as string ?? levels.Equipped;
             if (!Owned(equipped)) equipped = toolRows.FirstOrDefault(r => r.Owned)?.Id ?? levels.Equipped;
@@ -598,7 +603,7 @@ public partial class MainWindow : Window
             d.Trees.Add(tree);
         }
         if (tree is not null)
-            foreach (var row in nodeRows)
+            foreach (var row in nodeRows.Where(r => r.LevelChanged))
             {
                 var node = tree.Nodes.FirstOrDefault(n => n.Id == row.Id);
                 if (node is not null)
@@ -642,7 +647,7 @@ public partial class MainWindow : Window
             store.Backup(current);
             store.Restore(current, item.Path);
             dirty = false;
-            LoadSlots(current.Name);
+            LoadSlots(current.Key);
             SetStatus(Loc.T("Restored", item.When), StatusKind.Good);
         }
         catch (Exception ex) { ShowError(ex); }
@@ -650,19 +655,22 @@ public partial class MainWindow : Window
 
     void OpenBackupFolder_Click(object sender, RoutedEventArgs e)
     {
-        string dir = current is null ? store.BackupRoot : Path.Combine(store.BackupRoot, current.Name);
+        string dir = current is null ? store.BackupRoot : Path.Combine(store.BackupRoot, current.Key);
         Directory.CreateDirectory(dir);
         OpenFolder(dir);
     }
 
-    void OpenSaveFolder_Click(object sender, RoutedEventArgs e) =>
-        OpenFolder(Directory.Exists(store.SessionsDir) ? store.SessionsDir : store.Root);
+    void OpenSaveFolder_Click(object sender, RoutedEventArgs e)
+    {
+        string dir = current?.IsMars == true ? store.MarsSessionsDir : store.SessionsDir;
+        OpenFolder(Directory.Exists(dir) ? dir : store.Root);
+    }
 
     void Reload_Click(object sender, RoutedEventArgs e)
     {
         if (dirty && !ConfirmDiscard()) return;
         dirty = false;
-        LoadSlots(current?.Name);
+        LoadSlots(current?.Key);
     }
 
     static void OpenFolder(string dir) => Process.Start(new ProcessStartInfo("explorer.exe", $"\"{dir}\"") { UseShellExecute = true });
@@ -675,7 +683,7 @@ public partial class MainWindow : Window
         var dlg = new SaveFileDialog
         {
             Filter = Loc.T("RawFilter"),
-            FileName = $"{current.Name}-session-{DateTime.Now:yyyyMMdd-HHmmss}.bin",
+            FileName = $"{current.Key}-session-{DateTime.Now:yyyyMMdd-HHmmss}.bin",
         };
         if (dlg.ShowDialog(this) != true) return;
         File.WriteAllBytes(dlg.FileName, data.Raw);
@@ -695,7 +703,7 @@ public partial class MainWindow : Window
                     Loc.T("ImportTitle"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
             string backup = store.WriteRaw(current, raw, data.Raw);
             dirty = false;
-            LoadSlots(current.Name);
+            LoadSlots(current.Key);
             SetStatus(Loc.T("Imported", Path.GetFileName(backup)), StatusKind.Good);
         }
         catch (Exception ex) { ShowError(ex); }
@@ -718,16 +726,37 @@ public partial class MainWindow : Window
         {
             Tabs.SelectedIndex = i;
             await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-            var content = (FrameworkElement)Content;
-            var bmp = new System.Windows.Media.Imaging.RenderTargetBitmap(
-                (int)content.ActualWidth, (int)content.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-            bmp.Render(content);
-            var png = new System.Windows.Media.Imaging.PngBitmapEncoder();
-            png.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bmp));
-            using var fs = File.Create(Path.Combine(dir, $"tab{i}.png"));
-            png.Save(fs);
+            SavePng(Path.Combine(dir, $"tab{i}.png"));
+
+            // Long tabs: a second picture scrolled to the end (mod entries are listed last).
+            if (Tabs.SelectedContent is DependencyObject tab && FindScroller(tab) is { ScrollableHeight: > 0 } scroller)
+            {
+                scroller.ScrollToEnd();
+                await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                SavePng(Path.Combine(dir, $"tab{i}-end.png"));
+            }
         }
         Close();
+    }
+
+    void SavePng(string path)
+    {
+        var content = (FrameworkElement)Content;
+        var bmp = new System.Windows.Media.Imaging.RenderTargetBitmap(
+            (int)content.ActualWidth, (int)content.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+        bmp.Render(content);
+        var png = new System.Windows.Media.Imaging.PngBitmapEncoder();
+        png.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bmp));
+        using var fs = File.Create(path);
+        png.Save(fs);
+    }
+
+    static ScrollViewer? FindScroller(DependencyObject root)
+    {
+        if (root is ScrollViewer sv && sv.IsVisible) return sv;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            if (FindScroller(VisualTreeHelper.GetChild(root, i)) is { } found) return found;
+        return null;
     }
 
     // ---------------------------------------------------------------- window chrome

@@ -1,0 +1,62 @@
+name: Linux test report
+description: Tell us whether the Linux build works for you (also when everything works).
+title: "Linux test report: "
+labels: ["linux", "test report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing the Linux build! A short report is enough. Reports that say "works" are just as useful as bug reports:
+        once a version is confirmed, it is marked as tested in the README.
+  - type: input
+    id: version
+    attributes:
+      label: Editor version
+      description: Shown in the release name, e.g. 2.1.0
+      placeholder: "2.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Everything I tried works
+        - Works, but with small problems
+        - Does not work
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: Distribution and desktop, or Steam Deck
+      placeholder: "e.g. Fedora 43 KDE, Ubuntu 24.04 GNOME, Steam Deck desktop mode"
+    validations:
+      required: true
+  - type: dropdown
+    id: steam
+    attributes:
+      label: Steam installation
+      options:
+        - Normal (package from the distribution or Valve)
+        - Flatpak
+        - Snap
+        - Steam Deck
+        - Other / not sure
+  - type: checkboxes
+    id: tested
+    attributes:
+      label: What did you try?
+      options:
+        - label: The editor found my saves by itself
+        - label: I had to use "Choose save folder"
+        - label: Changed money / tools / upgrade tree and saved
+        - label: The game loaded the edited save
+        - label: Restored a backup
+        - label: Saves from mods (e.g. Mars Sweepers, Belt Overdrive)
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Anything that did not work, error messages (the error text in the editor can be copied), screenshots.

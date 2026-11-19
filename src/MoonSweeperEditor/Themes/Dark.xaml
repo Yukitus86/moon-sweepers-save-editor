@@ -60,6 +60,20 @@
         <Setter Property="FontSize" Value="12" />
     </Style>
 
+    <!-- Small "MOD" tag next to tools and upgrades that a mod added -->
+    <Style x:Key="ModBadge" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Gold}" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="5,0,5,1" />
+        <Setter Property="Margin" Value="8,0,0,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="ModBadgeText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource Bg}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
     <!-- Buttons -->
     <Style TargetType="Button">
         <Setter Property="Foreground" Value="{StaticResource Text}" />

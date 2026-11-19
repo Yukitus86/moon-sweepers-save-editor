@@ -13,7 +13,7 @@
     <AssemblyName>MoonSweeperEditor</AssemblyName>
     <RootNamespace>MoonSweeperEditor</RootNamespace>
     <Product>Moon Sweepers Savegame Editor (Linux)</Product>
-    <Version>2.0.1</Version>
+    <Version>2.1.0</Version>
     <Authors>Yukitus86</Authors>
     <Copyright>Copyright © 2026 Yukitus86</Copyright>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

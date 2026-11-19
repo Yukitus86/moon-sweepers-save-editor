@@ -91,6 +91,18 @@ Check(after.Trees.First(t => t.Owner == "local").Nodes.First(n => n.Id == node.I
 Check(after.Canisters.First(c => c.Key == "robot/2").Amount == Math.Min(10, after.Canisters.First(c => c.Key == "robot/2").Capacity), "robot/2 = 10 kg");
 Check(after.Canisters.Where(c => c.Key != "robot/2").Select(c => c.Amount)
            .SequenceEqual(before.Canisters.Where(c => c.Key != "robot/2").Select(c => c.Amount)), "other storage unchanged");
+// Entries added by mods: listed with the MOD tag and written back unchanged.
+var modNodes = before.Trees.SelectMany(t => t.Nodes).Where(n => !GameData.IsGameNode(n.Id)).Select(n => (n.Id, n.Level)).ToList();
+if (modNodes.Count > 0)
+{
+    Check(after.Trees.SelectMany(t => t.Nodes).Where(n => !GameData.IsGameNode(n.Id)).Select(n => (n.Id, n.Level)).SequenceEqual(modNodes),
+          "mod upgrades kept: " + string.Join(", ", modNodes.Select(n => $"{n.Id}={n.Level}")));
+    tabs.SelectedIndex = 2; Pump();
+    Check(All<ContentPresenter>(Named<ItemsControl>("NodeItems")).Any(p => p.DataContext is NodeRow { IsMod: true }), "mod upgrade listed with MOD tag");
+}
+if (Directory.Exists(new SaveStore(root).MarsSessionsDir))
+    Check(Named<ListBox>("SlotList").Items.OfType<SaveSlot>().Any(s => s.IsMars), "Mars Sweepers slot listed");
+
 Check(new SaveStore(root).ListBackups(slot).Count > 0, "backup written");
 Check(File.ReadAllText(slot.SlotJsonPath).Contains("5000000.25"), "slot.json dollars updated");
 

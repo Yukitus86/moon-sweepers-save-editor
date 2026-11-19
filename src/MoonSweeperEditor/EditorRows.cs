@@ -33,7 +33,8 @@ public abstract class Row : INotifyPropertyChanged
 /// <summary>Hotbar / equipped-tool choice; "" is the empty slot.</summary>
 public sealed record Choice(string Id)
 {
-    public string Name => Id.Length == 0 ? Loc.T("EmptySlot") : GameData.ToolName(Id);
+    public string Name => Id.Length == 0 ? Loc.T("EmptySlot")
+        : GameData.IsGameTool(Id) ? GameData.ToolName(Id) : GameData.ToolName(Id) + " · Mod";
     public override string ToString() => Name;
 }
 
@@ -68,6 +69,9 @@ public sealed class ToolRow : Row
     public bool AlwaysOwned { get; init; }
 
     public string Name => GameData.ToolName(Id);
+    /// <summary>Added by a mod: not part of the game's own tool list.</summary>
+    public bool IsMod => !GameData.IsGameTool(Id);
+    public string? ModTip => IsMod ? Loc.T("ModToolTip") : null;
     public bool CanToggle => !AlwaysOwned;
     public string OwnedHint => AlwaysOwned ? Loc.T("StarterTool") : "";
     public IReadOnlyList<int> LevelOptions { get; } = Enumerable.Range(GameData.MinToolLevel, GameData.MaxToolLevel).ToList();
@@ -75,7 +79,17 @@ public sealed class ToolRow : Row
     public bool Owned { get => owned; set => Set(ref owned, value); }
     public int Level { get => level; set => Set(ref level, Math.Clamp(value, GameData.MinToolLevel, GameData.MaxToolLevel)); }
 
-    internal void InitState(bool isOwned, int lvl) { owned = isOwned; level = lvl; }
+    int shownLevel;
+
+    /// <summary>True once the user picked another level. The save's own value (which mods may push past 3)
+    /// is only replaced then.</summary>
+    public bool LevelChanged => level != shownLevel;
+
+    internal void InitState(bool isOwned, int savedLevel)
+    {
+        owned = isOwned;
+        level = shownLevel = Math.Clamp(savedLevel, GameData.MinToolLevel, GameData.MaxToolLevel);
+    }
 }
 
 public sealed class NodeRow : Row
@@ -85,8 +99,11 @@ public sealed class NodeRow : Row
     public required string Id { get; init; }
     public required string CategoryKey { get; init; }
 
-    public string Category => Loc.T(CategoryKey);
+    public string Category => IsMod ? "" : Loc.T(CategoryKey);
     public string Name => GameData.NodeName(Id);
+    /// <summary>Added by a mod: not part of the game's own upgrade tree.</summary>
+    public bool IsMod => !GameData.IsGameNode(Id);
+    public string? ModTip => IsMod ? Loc.T("ModNodeTip") : null;
     public int Level
     {
         get => level;
@@ -94,7 +111,12 @@ public sealed class NodeRow : Row
     }
     public string LevelText => level == 0 ? Loc.T("NotBought") : Loc.T("LevelN", level);
 
-    internal void InitLevel(int lvl) => level = lvl;
+    int savedLevel;
+
+    /// <summary>True once the user picked another level; untouched nodes (including mod nodes) stay as saved.</summary>
+    public bool LevelChanged => level != savedLevel;
+
+    internal void InitLevel(int lvl) => level = savedLevel = lvl;
 }
 
 public sealed class CanisterRow(Canister c) : Row

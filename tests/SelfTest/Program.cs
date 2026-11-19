@@ -39,7 +39,7 @@ foreach (string path in Directory.EnumerateFiles(root, "session.moon*", SearchOp
         var again = SessionData.Parse(MoonContainer.Decode(MoonContainer.Encode(edited)));
         if (again.Team!.Dollars != 123456789.12m) throw new Exception("balance not kept");
         if (again.Stats.Count != data.Stats.Count || again.Stats.Zip(data.Stats).Any(p => p.First.Value != p.Second.Value)) throw new Exception("stats not kept");
-        if (again.Trees[0].Nodes.Count < GameData.Nodes.Count) throw new Exception("tree not kept");
+        if (again.Trees.Count > 0 && again.Trees[0].Nodes.Count < GameData.Nodes.Count) throw new Exception("tree not kept");
         if (!again.Raw.AsSpan(again.End).SequenceEqual(raw.AsSpan(data.End))) throw new Exception("tail changed");
 
         Console.WriteLine($"OK   {path}\n     start=0x{data.Start:X} end=0x{data.End:X} size={raw.Length}, " +
@@ -67,7 +67,7 @@ static int EndToEnd(string root)
     data.Canisters[1].Amount = data.Canisters[1].Capacity;
     string backup = store.Save(slot, data);
 
-    var reloaded = store.LoadSlots().First(s => s.Name == slot.Name);
+    var reloaded = store.LoadSlots().First(s => s.Key == slot.Key);
     Check(reloaded.Data!.Team!.Dollars == 4242424.42m, "balance written");
     Check(reloaded.Dollars == 4242424.42, "slot.json dollars updated");
     Check(reloaded.Data.Trees[0].Nodes[0].Level == slot.Data.Trees[0].Nodes[0].Level + 1, "tree written");

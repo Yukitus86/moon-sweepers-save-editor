@@ -86,7 +86,8 @@ public sealed class UpgradeTree
 ///   buildings     int32 nextId, int32 n × (int32, string, 32 bytes)
 ///   hotbars       int32 n × (string owner, int32 selected, int32 m × string tool)
 ///   canisters     int32 n × (string key, double amount, double capacity)
-///   conveyors     int32 nextId, int32 n × (int32, string, 50 bytes; 48 before the 2026-11-16 update)
+///   conveyors     int32 nextId, int32 n × (int32, string, 48 bytes, byte k, k × 24 bytes, byte)
+///                 (before the 2026-11-16 update: 48 bytes only, no k and no trailing byte)
 ///   rotations     int32 n × 24 bytes, int32, int32
 ///   tool levels   int32 n × (string owner, string equipped, int32 m × (string tool, int32 level, double))
 ///   upgrade tree  int32 n × (string owner, int32 m × (string node, int32 level))
@@ -98,8 +99,10 @@ public sealed class SessionData
 {
     const int MinStatsSize = 21;
     static readonly byte[] TeamKey = [4, (byte)'t', (byte)'e', (byte)'a', (byte)'m'];
-    static readonly Regex IdPattern = new(@"^[a-z][a-z0-9_]*$", RegexOptions.Compiled);
-    static readonly Regex NodePattern = new(@"^[a-z]+\.[a-z0-9_]+$", RegexOptions.Compiled);
+    // Tool and upgrade ids. The game itself uses "nailbrush" and "logi.transfer", but mods add their own
+    // (upper case, several dots, ':' or '-'), so any short printable ASCII name is accepted. False matches
+    // are still ruled out by the byte-identical round trip of the whole block.
+    static readonly Regex IdPattern = new(@"^[\x21-\x7e]([\x20-\x7e]{0,126}[\x21-\x7e])?$", RegexOptions.Compiled);
 
     public byte[] Raw { get; }
     public int Start { get; private set; }
@@ -120,10 +123,12 @@ public sealed class SessionData
     public int ConveyorCount { get; private set; }
 
     byte[] piles = [], buildings = [], conveyors = [], rotations = [];
-    int conveyorSize;
+    bool legacyConveyors;
 
-    // Bytes after the owner string of each conveyor: 50 since the game update of 2026-11-16, 48 before.
-    static readonly int[] ConveyorSizes = [50, 48];
+    // Since the game update of 2026-11-16 each conveyor ends with a byte count k, k extra 24-byte points
+    // (belts with bends; straight belts have k = 0) and one more byte. Older saves have neither.
+    static readonly bool[] ConveyorLayouts = [false, true];
+    const int ConveyorBase = 48, ConveyorPoint = 24, MaxConveyorPoints = 64;
 
     SessionData(byte[] raw) => Raw = raw;
 
@@ -132,6 +137,7 @@ public sealed class SessionData
     public static SessionData Parse(byte[] raw)
     {
         var found = new List<SessionData>();
+        var deepest = (Offset: -1, Section: "");
         int from = 0;
         while (true)
         {
@@ -139,9 +145,9 @@ public sealed class SessionData
             if (i < 0) break;
             i += from;
             foreach (int start in CandidateStarts(raw, i))
-            foreach (int conveyorSize in ConveyorSizes)
+            foreach (bool legacy in ConveyorLayouts)
             {
-                var parsed = TryParse(raw, start, conveyorSize);
+                var parsed = TryParse(raw, start, legacy, ref deepest);
                 if (parsed is not null && !found.Any(f => f.Start == parsed.Start)) found.Add(parsed);
             }
             from = i + 1;
@@ -150,6 +156,8 @@ public sealed class SessionData
         return found.Count switch
         {
             1 => found[0],
+            0 when deepest.Offset >= 0 => throw new InvalidDataException(
+                Loc.T("ErrNoPlayerData") + "\n" + Loc.T("ErrStoppedAt", deepest.Section, deepest.Offset)),
             0 => throw new InvalidDataException(Loc.T("ErrNoPlayerData")),
             _ => throw new InvalidDataException(Loc.T("ErrAmbiguous", found.Count)),
         };
@@ -174,12 +182,14 @@ public sealed class SessionData
         }
     }
 
-    static SessionData? TryParse(byte[] raw, int start, int conveyorSize)
+    // deepest: the furthest point any candidate reached after a readable wallet, for the error message.
+    static SessionData? TryParse(byte[] raw, int start, bool legacyConveyors, ref (int Offset, string Section) deepest)
     {
+        var r = new Reader(raw, start);
         try
         {
-            var data = new SessionData(raw) { Start = start, conveyorSize = conveyorSize };
-            data.Read(new Reader(raw, start));
+            var data = new SessionData(raw) { Start = start, legacyConveyors = legacyConveyors };
+            data.Read(r);
             byte[] again = data.SerializeBlock();
             if (!again.AsSpan().SequenceEqual(raw.AsSpan(start, data.End - start))) return null;
             data.ReadStats();
@@ -187,6 +197,7 @@ public sealed class SessionData
         }
         catch (Exception e) when (e is FormatException or ArgumentException or IndexOutOfRangeException or EndOfStreamException or DecoderFallbackException or OverflowException)
         {
+            if (r.Section.Length > 0 && r.Pos - start > deepest.Offset) deepest = (r.Pos - start, r.Section);
             return null;
         }
     }
@@ -198,6 +209,7 @@ public sealed class SessionData
         for (int k = 0; k < n; k++)
             Wallet.Add(new WalletEntry { Owner = r.Text(), Dollars = r.Decimal(), PendingKilograms = r.Decimal() });
 
+        r.Section = "inventories";
         n = r.Count(64);
         for (int k = 0; k < n; k++)
         {
@@ -207,18 +219,21 @@ public sealed class SessionData
             Inventories.Add(inv);
         }
 
+        r.Section = "piles";
         int s = r.Pos;
         r.I32();
         PileCount = r.Count(10_000_000);
         for (int k = 0; k < PileCount; k++) { r.I32(); r.Text(); r.Skip(57); }
         piles = r.Slice(s);
 
+        r.Section = "buildings";
         s = r.Pos;
         r.I32();
         BuildingCount = r.Count(10_000_000);
         for (int k = 0; k < BuildingCount; k++) { r.I32(); r.Text(); r.Skip(32); }
         buildings = r.Slice(s);
 
+        r.Section = "hotbars";
         n = r.Count(64);
         for (int k = 0; k < n; k++)
         {
@@ -233,16 +248,29 @@ public sealed class SessionData
             Hotbars.Add(bar);
         }
 
+        r.Section = "canisters";
         n = r.Count(1_000_000);
         for (int k = 0; k < n; k++)
             Canisters.Add(new Canister { Key = r.Text(), Amount = r.F64(), Capacity = r.F64() });
 
+        r.Section = "conveyors";
         s = r.Pos;
         r.I32();
         ConveyorCount = r.Count(10_000_000);
-        for (int k = 0; k < ConveyorCount; k++) { r.I32(); r.Text(); r.Skip(conveyorSize); }
+        for (int k = 0; k < ConveyorCount; k++)
+        {
+            r.I32();
+            r.Text();
+            r.Skip(ConveyorBase);
+            if (legacyConveyors) continue;
+            int points = r.U8();
+            if (points > MaxConveyorPoints) throw new FormatException();
+            r.Skip(points * ConveyorPoint);
+            r.U8();
+        }
         conveyors = r.Slice(s);
 
+        r.Section = "rotations";
         s = r.Pos;
         n = r.Count(10_000_000);
         r.Skip(n * 24);
@@ -250,6 +278,7 @@ public sealed class SessionData
         r.I32();
         rotations = r.Slice(s);
 
+        r.Section = "tool levels";
         n = r.Count(64);
         for (int k = 0; k < n; k++)
         {
@@ -260,12 +289,13 @@ public sealed class SessionData
             ToolLevels.Add(set);
         }
 
+        r.Section = "upgrade tree";
         n = r.Count(64);
         for (int k = 0; k < n; k++)
         {
             var tree = new UpgradeTree { Owner = r.Text() };
             int m = r.Count(1024);
-            for (int t = 0; t < m; t++) tree.Nodes.Add(new TreeNode { Id = r.Id(NodePattern), Level = r.I32() });
+            for (int t = 0; t < m; t++) tree.Nodes.Add(new TreeNode { Id = r.Id(IdPattern), Level = r.I32() });
             Trees.Add(tree);
         }
 
@@ -379,6 +409,7 @@ public sealed class SessionData
         static readonly UTF8Encoding Strict = new(false, throwOnInvalidBytes: true);
 
         public int Pos { get; private set; } = pos;
+        public string Section { get; set; } = "";
         readonly int start = pos;
 
         ReadOnlySpan<byte> Take(int n)
@@ -390,6 +421,7 @@ public sealed class SessionData
         }
 
         public void Skip(int n) => Take(n);
+        public byte U8() => Take(1)[0];
         public int I32() => BinaryPrimitives.ReadInt32LittleEndian(Take(4));
         public double F64() => BinaryPrimitives.ReadDoubleLittleEndian(Take(8));
 

@@ -10,6 +10,12 @@ public sealed class SaveSlot
 {
     public required string Name { get; init; }
     public required string SlotDir { get; init; }
+
+    /// <summary>True for a slot of the "Mars Sweepers" mod (MarsSweepers\Release\saves), which uses the same file format.</summary>
+    public bool IsMars { get; init; }
+
+    /// <summary>Unique name across both planets; used for editor backups and to reselect the slot.</summary>
+    public string Key => IsMars ? "mars-" + Name : Name;
     public string? SessionPath { get; init; }
     public double? Dollars { get; init; }
     public int? Regions { get; init; }
@@ -21,14 +27,14 @@ public sealed class SaveSlot
     public int Number => int.TryParse(Name.AsSpan(5), out int n) ? n : int.MaxValue;
     public bool CanEdit => Error is null && Data is not null;
     public string SlotJsonPath => Path.Combine(SlotDir, "slot.json");
-    public string Title => Loc.T("SlotTitle", Number);
+    public string Title => Loc.T(IsMars ? "MarsSlotTitle" : "SlotTitle", Number);
 
     public string BalanceText => Data?.Team is { } t ? Format.Money(t.Dollars) : Dollars is { } d ? Format.Money((decimal)d) : "–";
     public string PlayTimeText => PlaySeconds is { } s ? Format.Duration(s) : "–";
     public string LastPlayedText => LastPlayed?.ToString("g", Loc.Instance.Culture) ?? "–";
     public string RegionsText => Regions?.ToString("N0", Loc.Instance.Culture) ?? "–";
 
-    public static SaveSlot Load(string slotDir)
+    public static SaveSlot Load(string slotDir, bool isMars = false)
     {
         string name = Path.GetFileName(slotDir);
         string? session = FindSession(slotDir);
@@ -58,7 +64,7 @@ public sealed class SaveSlot
 
         return new SaveSlot
         {
-            Name = name, SlotDir = slotDir, SessionPath = session,
+            Name = name, SlotDir = slotDir, SessionPath = session, IsMars = isMars,
             Dollars = dollars, Regions = regions, PlaySeconds = playSeconds, LastPlayed = lastPlayed,
             Data = data, Error = error,
         };

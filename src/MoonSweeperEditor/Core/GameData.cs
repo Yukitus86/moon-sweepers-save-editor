@@ -58,6 +58,8 @@ public static class GameData
     public static string ToolName(string id) => Tools.FirstOrDefault(t => t.Id == id)?.Name ?? id;
 
     public static string NodeName(string id) => Nodes.FirstOrDefault(n => n.Id == id)?.Name ?? id;
+    public static bool IsGameTool(string id) => Tools.Any(t => t.Id == id);
+    public static bool IsGameNode(string id) => Nodes.Any(n => n.Id == id);
 
     /// <summary>Loc key of the storage type behind a canister key such as "robot/12".</summary>
     public static string CanisterKindKey(string key) => key.Split('/')[0] switch

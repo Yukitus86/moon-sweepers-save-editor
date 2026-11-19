@@ -255,8 +255,13 @@
                                                             <ColumnDefinition Width="140" />
                                                             <ColumnDefinition Width="*" />
                                                         </Grid.ColumnDefinitions>
-                                                        <StackPanel VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                        <StackPanel VerticalAlignment="Center" ToolTip="{Binding ModTip}">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="180" />
+                                                                <Border Style="{StaticResource ModBadge}" Visibility="{Binding IsMod, Converter={StaticResource BoolToVis}}">
+                                                                    <TextBlock Text="{l:T ModBadge}" Style="{StaticResource ModBadgeText}" />
+                                                                </Border>
+                                                            </StackPanel>
                                                             <TextBlock Text="{Binding Id}" Style="{StaticResource Hint}" FontSize="11" />
                                                         </StackPanel>
                                                         <CheckBox Grid.Column="1" IsChecked="{Binding Owned}" IsEnabled="{Binding CanToggle}" VerticalAlignment="Center" />
@@ -344,9 +349,16 @@
                                                                FontSize="18" FontWeight="Bold" Foreground="{StaticResource Gold}" />
                                                     <Button Style="{StaticResource StepButton}" Content="+" Tag="+1" Click="NodeStep_Click" />
                                                 </StackPanel>
-                                                <StackPanel>
-                                                    <TextBlock Text="{Binding Category}" Foreground="{StaticResource Accent}" FontSize="11" FontWeight="SemiBold" />
-                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                                <StackPanel ToolTip="{Binding ModTip}">
+                                                    <Grid HorizontalAlignment="Left">
+                                                        <TextBlock Text="{Binding Category}" Foreground="{StaticResource Accent}" FontSize="11" FontWeight="SemiBold" />
+                                                        <!-- mod nodes: the tag replaces the category line -->
+                                                        <Border Style="{StaticResource ModBadge}" Margin="0,0,0,1" Background="{StaticResource Gold}"
+                                                                Visibility="{Binding IsMod, Converter={StaticResource BoolToVis}}">
+                                                            <TextBlock Text="{l:T ModBadge}" Style="{StaticResource ModBadgeText}" />
+                                                        </Border>
+                                                    </Grid>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" />
                                                     <TextBlock Style="{StaticResource Hint}" FontSize="11">
                                                         <Run Text="{Binding Id, Mode=OneWay}" /> <Run Text="·" /> <Run Text="{Binding LevelText, Mode=OneWay}" />
                                                     </TextBlock>
